@@ -38,6 +38,7 @@ function ExerciseDetailPage() {
   const [textAnswer, setTextAnswer] = useState('');
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [shuffledOptions, setShuffledOptions] = useState<{ text: string; originalIndex: number }[]>([]);
 
   const navigate = useNavigate();
   const [finished, setFinished] = useState(false);
@@ -57,6 +58,18 @@ function ExerciseDetailPage() {
       .then(setExercise)
       .catch((err) => setLoadError(err.message));
   }, [id]);
+
+  useEffect(() => {
+    if (exercise?.exerciseType === 'multiple_choice') {
+      const opts = (exercise.content as MultipleChoiceContent).options;
+      const withIndex = opts.map((text, originalIndex) => ({ text, originalIndex }));
+      for (let i = withIndex.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [withIndex[i], withIndex[j]] = [withIndex[j], withIndex[i]];
+      }
+      setShuffledOptions(withIndex);
+    }
+  }, [exercise]);
 
   if (!exercise) return <p>Se încarcă...</p>;
 
@@ -141,28 +154,26 @@ function ExerciseDetailPage() {
         <>
           <p style={{ fontSize: '1.3rem' }}>{(exercise.content as MultipleChoiceContent).prompt}</p>
           <div style={{  margin: '20px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {(exercise.content as MultipleChoiceContent).options.map((opt, idx) => (
+            {shuffledOptions.map((opt) => (
               <label
-                key={idx}
+                key={opt.originalIndex}
                 style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
                     fontSize: '1.05rem', transition: 'all 0.2s ease',
 
-                    color: selectedIndex === idx ? '#074ca6' : '#1e293b',
-                    fontWeight: selectedIndex === idx ? 600 : 400,
-
-                    backgroundColor: selectedIndex === idx ? '#eff6ff' : '#ffffff',
-
-                    border: selectedIndex === idx ? '2px solid #074ca6' : '2px solid #cbd5e1',
-                }}
+                    color: selectedIndex === opt.originalIndex ? '#074ca6' : '#1e293b',
+                    fontWeight: selectedIndex === opt.originalIndex ? 600 : 400,
+                    backgroundColor: selectedIndex === opt.originalIndex ? '#eff6ff' : '#ffffff',
+                    border: selectedIndex === opt.originalIndex ? '2px solid #074ca6' : '2px solid #cbd5e1',
+                  }}
                 >
                 <input
                     type="radio"
                     name="option"
-                    checked={selectedIndex === idx}
-                    onChange={() => setSelectedIndex(idx)}
+                    checked={selectedIndex === opt.originalIndex}
+                    onChange={() => setSelectedIndex(opt.originalIndex)}
                     style={{ accentColor: '#074ca6', width: 18, height: 18, cursor: 'pointer' }}
                 />
-                {opt}
+                {opt.text}
                 </label>
             ))}
           </div>
